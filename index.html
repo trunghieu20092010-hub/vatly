@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Lực Hút – Vật Lý × Tình Yêu</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #060913;
+    color: #fff;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    overflow: hidden;
+    height: 100vh;
+    width: 100vw;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+  #stage {
+    width: 100%;
+    max-width: 430px;
+    height: 100vh;
+    position: relative;
+    background: radial-gradient(ellipse at 50% 30%, #1a0b2e 0%, #0a0612 55%, #020208 100%);
+    overflow: hidden;
+  }
+  #grid {
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(180,100,255,0.06) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(180,100,255,0.06) 1px, transparent 1px);
+    background-size: 32px 32px;
+    pointer-events: none;
+    opacity: 0.7;
+  }
+  .scene {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    opacity: 0;
+    transition: opacity 1.2s cubic-bezier(0.4, 0, 0.2, 1);
+    padding: 40px 24px;
+    text-align: center;
+    z-index: 5;
+  }
+  .scene.active { opacity: 1; }
+  h1 {
+    font-size: 3.2rem;
+    font-weight: 800;
+    letter-spacing: -1px;
+    line-height: 1.1;
+  }
+  .pink { color: #ff4d9d; text-shadow: 0 0 30px rgba(255,77,157,0.6); }
+  .white { color: #f8fafc; }
+  .sub {
+    font-size: 0.82rem;
+    color: #c4b5fd;
+    margin-top: 12px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    opacity: 0.9;
+  }
+  .formula {
+    font-family: 'Times New Roman', Georgia, serif;
+    font-size: 1.9rem;
+    color: #ff6bb5;
+    margin: 20px 0;
+    text-shadow: 0 0 25px rgba(255,107,181,0.55);
+  }
+  .big-formula { font-size: 2.4rem; margin: 28px 0; }
+  .desc { font-size: 1.18rem; color: #e2e8f0; line-height: 1.5; max-width: 330px; }
+  .highlight { color: #ff6bb5; font-weight: 600; }
+  
+  .masses {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    max-width: 300px;
+    margin: 40px 0 20px;
+    position: relative;
+    height: 60px;
+  }
+  .mass {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 35%, #ff9ec7, #ff2d78);
+    box-shadow: 0 0 25px #ff4d9d, 0 0 50px rgba(255,77,157,0.5);
+    position: absolute;
+    top: 0;
+  }
+  .mass::after {
+    content: attr(data-label);
+    position: absolute;
+    top: 40px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 0.78rem;
+    color: #f9a8d4;
+    white-space: nowrap;
+    font-weight: 500;
+  }
+  .line {
+    position: absolute;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, #a78bfa, transparent);
+    top: 15px;
+    left: 50px;
+    right: 50px;
+    opacity: 0.6;
+  }
+  .force-label {
+    position: absolute;
+    top: -26px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 0.85rem;
+    color: #fbbf24;
+    text-shadow: 0 0 12px rgba(251,191,36,0.6);
+    white-space: nowrap;
+  }
+  canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 2;
+  }
+  #progress {
+    position: absolute;
+    bottom: 28px;
+    left: 24px;
+    right: 24px;
+    height: 3px;
+    background: rgba(255,255,255,0.08);
+    border-radius: 3px;
+    overflow: hidden;
+    z-index: 20;
+  }
+  #bar {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, #ff4d9d, #c084fc, #60a5fa);
+    border-radius: 3px;
+    box-shadow: 0 0 12px rgba(255,77,157,0.5);
+  }
+  #timer {
+    position: absolute;
+    bottom: 8px;
+    left: 24px;
+    font-size: 0.72rem;
+    color: #94a3b8;
+    z-index: 20;
+    letter-spacing: 1px;
+  }
+  .formula-card {
+    background: rgba(15,10,30,0.78);
+    border: 1px solid rgba(255,77,157,0.3);
+    border-radius: 16px;
+    padding: 16px 20px;
+    margin: 9px 0;
+    text-align: left;
+    width: 100%;
+    max-width: 340px;
+    backdrop-filter: blur(12px);
+    opacity: 0;
+    transform: translateY(20px);
+    transition: all 0.8s cubic-bezier(0.22,1,0.36,1);
+  }
+  .formula-card.show { opacity: 1; transform: translateY(0); }
+  .formula-card .title { font-size: 0.75rem; color: #f9a8d4; margin-bottom: 6px; letter-spacing: 1.5px; font-weight: 600; }
+  .formula-card .eq { font-family: 'Times New Roman', serif; font-size: 1.25rem; color: #fff; margin-bottom: 6px; }
+  .formula-card .note { font-size: 0.8rem; color: #a5b4fc; line-height: 1.4; }
+  .heart-final {
+    font-size: 5.5rem;
+    filter: drop-shadow(0 0 40px #ff4d9d) drop-shadow(0 0 80px rgba(255,77,157,0.4));
+    animation: heartBeat 2.2s ease-in-out infinite;
+  }
+  @keyframes heartBeat {
+    0%, 100% { transform: scale(1); }
+    15% { transform: scale(1.12); }
+    30% { transform: scale(1); }
+    45% { transform: scale(1.08); }
+    60% { transform: scale(1); }
+  }
+  .glow-text { animation: textGlow 3s ease-in-out infinite alternate; }
+  @keyframes textGlow {
+    from { text-shadow: 0 0 20px rgba(255,77,157,0.4); }
+    to { text-shadow: 0 0 40px rgba(255,77,157,0.8), 0 0 60px rgba(192,132,252,0.4); }
+  }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="grid"></div>
+  <canvas id="fx"></canvas>
+
+  <div class="scene active" id="s0">
+    <div class="sub">Vật lý × Tình yêu</div>
+    <h1 class="white glow-text" style="margin-top:18px">LỰC HÚT</h1>
+  </div>
+
+  <div class="scene" id="s1">
+    <div class="sub">Newton · 1687</div>
+    <div class="formula big-formula glow-text">F = G · m₁m₂ / r²</div>
+    <div class="desc">Định luật vạn vật hấp dẫn</div>
+  </div>
+
+  <div class="scene" id="s2">
+    <div class="sub">Vẻ đẹp của Vật lý</div>
+    <div class="desc" style="margin-bottom:8px;opacity:0.85">Định luật vạn vật hấp dẫn</div>
+    <div class="masses" id="masses">
+      <div class="mass" data-label="BẠN" id="m1"></div>
+      <div class="line"></div>
+      <div class="mass" data-label="NGƯỜI ẤY" id="m2"></div>
+      <div class="force-label" id="forceLabel"></div>
+    </div>
+    <div class="formula" id="fDisplay">F = G · m₁m₂ / r²</div>
+    <div style="font-size:1rem;color:#c4b5fd;margin-top:8px" id="rDisplay">r = 3.40</div>
+  </div>
+
+  <div class="scene" id="s3">
+    <div class="desc">Càng lại gần nhau…</div>
+    <div class="desc highlight" style="margin-top:18px;font-size:1.4rem;line-height:1.4">
+      r giảm một nửa<br>→ lực hút tăng gấp 4
+    </div>
+  </div>
+
+  <div class="scene" id="s4">
+    <div class="desc">…và khi</div>
+    <div class="formula" style="font-size:2.6rem;margin:20px 0">r → 0</div>
+    <div class="desc">lực hút trở nên<br><span class="highlight">vô hạn</span></div>
+  </div>
+
+  <div class="scene" id="s5">
+    <div class="sub">Khi lực hút hóa thành sóng</div>
+    <div class="desc" style="margin-top:28px">Lực hút không biến mất<br><span class="highlight">nó hóa thành sóng</span></div>
+  </div>
+
+  <div class="scene" id="s6">
+    <div class="desc" style="font-size:1.3rem">Mỗi nhịp sóng<br><span class="highlight">là một lần nhớ nhau</span></div>
+  </div>
+
+  <div class="scene" id="s7">
+    <div class="heart-final">❤</div>
+    <h1 class="pink" style="font-size:2.8rem;margin-top:24px">LỰC HÚT</h1>
+    <div class="desc" style="margin-top:10px;letter-spacing:1px">VẪN LUÔN HIỆN HỮU</div>
+    <div class="formula" style="margin-top:28px;font-size:1.5rem">r → 0  ⇒  F → ∞</div>
+  </div>
+
+  <div class="scene" id="s8">
+    <div class="sub" style="margin-bottom:18px">Công thức mở rộng</div>
+    <div class="formula-card" id="card1">
+      <div class="title">NĂNG LƯỢNG THẾ HẤP DẪN</div>
+      <div class="eq">U = −G · m₁m₂ / r</div>
+      <div class="note">Khi r → 0 thì U → −∞ → gắn kết không thể tách rời</div>
+    </div>
+    <div class="formula-card" id="card2">
+      <div class="title">CƯỜNG ĐỘ TRƯỜNG</div>
+      <div class="eq">g = G · m / r²</div>
+      <div class="note">Càng gần, trường càng mạnh – giống cảm xúc khi ở cạnh nhau</div>
+    </div>
+    <div class="formula-card" id="card3">
+      <div class="title">ẨN DỤ TÌNH YÊU</div>
+      <div class="eq">F_ty = G · (tc₁ · tc₂) / d²</div>
+      <div class="note">tc = tình cảm · d = khoảng cách<br>Khoảng cách càng nhỏ → lực càng lớn</div>
+    </div>
+    <div class="formula-card" id="card4">
+      <div class="title">VẬN TỐC THOÁT</div>
+      <div class="eq">v_esc = √(2GM / r)</div>
+      <div class="note">Muốn “thoát” khỏi quỹ đạo của nhau thì cần vận tốc rất lớn</div>
+    </div>
+  </div>
+
+  <div id="progress"><div id="bar"></div></div>
+  <div id="timer">01 / 09</div>
+</div>
+
+<script>
+const scenes = ['s0','s1','s2','s3','s4','s5','s6','s7','s8'];
+const durations = [4000, 4500, 7500, 4000, 4000, 4500, 5000, 5000, 7000];
+
+let current = 0;
+let startTime = 0;
+let sceneStart = 0;
+let particles = [];
+let wavePhase = 0;
+let heartProgress = 0;
+
+const canvas = document.getElementById('fx');
+const ctx = canvas.getContext('2d');
+let W, H;
+
+function resize() {
+  W = canvas.offsetWidth;
+  H = canvas.offsetHeight;
+  canvas.width = W * devicePixelRatio;
+  canvas.height = H * devicePixelRatio;
+  ctx.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
+}
+window.addEventListener('resize', resize);
+resize();
+
+function initParticles() {
+  particles = [];
+  for (let i = 0; i < 60; i++) {
+    particles.push({
+      x: Math.random() * W,
+      y: Math.random() * H,
+      r: Math.random() * 1.8 + 0.4,
+      vx: (Math.random() - 0.5) * 0.25,
+      vy: (Math.random() - 0.5) * 0.25,
+      alpha: Math.random() * 0.5 + 0.15,
+      color: Math.random() > 0.5 ? '255,77,157' : '192,132,252'
+    });
+  }
+}
+initParticles();
+
+function easeInOutCubic(t) {
+  return t < 0.5 ? 4*t*t*t : 1 - Math.pow(-2*t+2,3)/2;
+}
+
+function drawParticles() {
+  particles.forEach(p => {
+    p.x += p.vx; p.y += p.vy;
+    if (p.x < 0) p.x = W; if (p.x > W) p.x = 0;
+    if (p.y < 0) p.y = H; if (p.y > H) p.y = 0;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.r, 0, Math.PI*2);
+    ctx.fillStyle = `rgba(${p.color},${p.alpha})`;
+    ctx.fill();
+  });
+}
+
+function drawWaves(progress) {
+  ctx.save();
+  const lines = 16;
+  const centerY = H * 0.48;
+  for (let i = 0; i < lines; i++) {
+    const t = i / (lines - 1);
+    ctx.beginPath();
+    ctx.strokeStyle = `rgba(255, ${90 + i*6}, ${160 + i*4}, ${0.25 + t*0.55})`;
+    ctx.lineWidth = 1.4 + t * 0.8;
+    for (let x = 0; x <= W; x += 3) {
+      const amp = (10 + Math.sin(wavePhase * 0.4 + i * 0.35) * 7) * (0.4 + progress * 0.8);
+      const y = centerY - 90 + i * 12 + Math.sin(x * 0.022 + wavePhase + i * 0.45) * amp;
+      if (x === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+function drawHeartOutline(progress, solid = false) {
+  const cx = W / 2;
+  const cy = H / 2 - 30;
+  const scale = 1.7 + Math.sin(wavePhase * 0.6) * 0.08;
+
+  ctx.save();
+  if (solid) {
+    ctx.fillStyle = '#ff3d8d';
+    ctx.shadowColor = '#ff3d8d';
+    ctx.shadowBlur = 50;
+  } else {
+    ctx.strokeStyle = `rgba(255,70,150,${0.4 + progress * 0.6})`;
+    ctx.lineWidth = 2.8;
+    ctx.shadowColor = '#ff4d9d';
+    ctx.shadowBlur = 18;
+  }
+
+  ctx.beginPath();
+  for (let t = 0; t <= Math.PI * 2; t += 0.015) {
+    const x = 16 * Math.pow(Math.sin(t), 3);
+    const y = -(13 * Math.cos(t) - 5 * Math.cos(2*t) - 2 * Math.cos(3*t) - Math.cos(4*t));
+    const px = cx + x * scale;
+    const py = cy + y * scale;
+    if (t === 0) ctx.moveTo(px, py);
+    else ctx.lineTo(px, py);
+  }
+  if (solid) ctx.fill();
+  else ctx.stroke();
+  ctx.restore();
+}
+
+function animateMasses(p) {
+  const ease = easeInOutCubic(p);
+  const r = 3.40 - ease * 2.65;
+  const force = Math.pow(3.40 / Math.max(r, 0.75), 2);
+
+  document.getElementById('rDisplay').textContent = `r = ${r.toFixed(2)}`;
+  document.getElementById('fDisplay').innerHTML =
+    `F = G · m₁m₂ / r² &nbsp;<span style="color:#fbbf24;font-size:1.1rem">×${force.toFixed(1)}</span>`;
+  document.getElementById('forceLabel').textContent = force > 4 ? `F × ${force.toFixed(1)}` : '';
+
+  const maxDist = 220;
+  const minDist = 44;
+  const dist = maxDist - ease * (maxDist - minDist);
+  const center = W / 2;
+  document.getElementById('m1').style.left = (center - dist / 2 - 16) + 'px';
+  document.getElementById('m2').style.left = (center + dist / 2 - 16) + 'px';
+}
+
+function showScene(idx) {
+  document.querySelectorAll('.scene').forEach(s => s.classList.remove('active'));
+  document.getElementById(scenes[idx]).classList.add('active');
+  document.getElementById('timer').textContent = `${String(idx+1).padStart(2,'0')} / 09`;
+
+  if (idx === 8) {
+    ['card1','card2','card3','card4'].forEach(id => {
+      document.getElementById(id).classList.remove('show');
+    });
+  }
+}
+
+function loop(t) {
+  if (!startTime) { startTime = t; sceneStart = t; }
+  const sceneElapsed = t - sceneStart;
+
+  let totalDur = durations.reduce((a,b) => a+b, 0);
+  let acc = 0;
+  for (let i = 0; i < current; i++) acc += durations[i];
+  const sceneP = Math.min(1, sceneElapsed / durations[current]);
+  const overall = (acc + sceneP * durations[current]) / totalDur;
+  document.getElementById('bar').style.width = (overall * 100) + '%';
+
+  ctx.clearRect(0, 0, W, H);
+  drawParticles();
+
+  if (current === 2) animateMasses(sceneP);
+  if (current === 5) { wavePhase += 0.035; drawWaves(sceneP); }
+  if (current === 6) {
+    wavePhase += 0.04;
+    heartProgress = Math.min(1, sceneP * 1.3);
+    drawWaves(0.7);
+    drawHeartOutline(heartProgress, false);
+  }
+  if (current === 7) { wavePhase += 0.03; drawHeartOutline(1, true); }
+
+  if (current === 8) {
+    const delays = [0.05, 0.22, 0.40, 0.58];
+    delays.forEach((d, i) => {
+      if (sceneP > d) document.getElementById('card' + (i+1)).classList.add('show');
+    });
+  }
+
+  if (sceneElapsed >= durations[current]) {
+    current++;
+    if (current >= scenes.length) {
+      setTimeout(() => {
+        current = 0; startTime = 0; sceneStart = 0; heartProgress = 0;
+        showScene(0);
+        requestAnimationFrame(loop);
+      }, 2000);
+      return;
+    }
+    sceneStart = t;
+    showScene(current);
+  }
+
+  requestAnimationFrame(loop);
+}
+
+showScene(0);
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
